@@ -32,12 +32,16 @@ module Rapns
     }
 
 		def set_status_changed_at_to_now
-	    self.status_changed_at = Time.now
+	    self.status_changed_at = Time.now.utc
 	  end
 
 	  def status=(value)
 	    set_status_changed_at_to_now
 	    write_attribute(:status, value)
+	  end
+
+		def notifications_total
+	  	Rapns::Notification.count(:all, :conditions=>['job_id = ?', self.id])
 	  end
 
 	  def notifications_remaining

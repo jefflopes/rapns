@@ -11,7 +11,7 @@ module Rapns
         def deliverable_notifications(apps)
           with_database_reconnect_and_retry do
             batch_size = Rapns.config.batch_size
-            relation = Rapns::Notification.ready_for_delivery.for_apps(apps)
+            relation = Rapns::Notification.for_daemon_id(Rapns.config.daemon_id).ready_for_delivery.for_apps(apps)
             relation = relation.limit(batch_size) unless Rapns.config.push
             relation.to_a
           end
@@ -27,9 +27,14 @@ module Rapns
 
         def mark_delivered(notification)
           with_database_reconnect_and_retry do
-            notification.delivered = true
-            notification.delivered_at = Time.now
-            notification.save!(:validate => false)
+            #notification.delivered = true
+            #notification.delivered_at = Time.now
+            #notification.save!(:validate => false)
+
+            # perf tuning, use SQL directly instead of ActiveRecord
+            conn = ::ActiveRecord::Base.connection
+            sql = "UPDATE rapns_notifications SET delivered=1 where id=#{notification.id}"
+            conn.execute(sql)
           end
         end
 

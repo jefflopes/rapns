@@ -18,8 +18,10 @@ module Rapns
       def self.sync
         apps = Rapns::App.for_daemon_id(Rapns.config.daemon_id)
 
+        not_running = []
         apps.each do |app|
-          if !app.job.nil? && app.job.status == Rapns::JobStatus::New
+          if !app.job.nil? && app.job.status != Rapns::JobStatus::Ready && app.job.status != Rapns::JobStatus::Sent
+            not_running << app
             next
           else
             sync_app(app) 
@@ -27,6 +29,7 @@ module Rapns
         end
         
         removed = runners.keys - apps.map(&:id)
+        removed.concat(runners.keys & not_running.map(&:id))
         removed.each { |app_id| runners.delete(app_id).stop }
       end
 
